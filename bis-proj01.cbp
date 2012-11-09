@@ -32,6 +32,9 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="Makefile" />
+		<Unit filename="hide_pid.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="proj01.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />

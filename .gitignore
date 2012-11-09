@@ -1,1 +1,12 @@
 proj01
+*.ko
+*.o
+*.mod.*
+modules.order
+Module.symvers
+.tmp_versions/
+*.cmd
+rootkit.c
+hide_pid.c
+.directory
+*.swp
