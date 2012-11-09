@@ -1,0 +1,5 @@
+Projekt do BIS
+
+sshd [start|stop] - spusti/zastavi ssh server
+exit              - uzatvori spojenie
+destroy           - ukonci na strane servera a vrati system do povodneho stavu
