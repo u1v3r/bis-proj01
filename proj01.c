@@ -27,17 +27,23 @@
 
 pthread_t thread;
 int sockfd, newsockfd;
+pid_t app_pid;
 struct sockaddr_in server_addr;
-
-
 
 void *handle_client(void*);
 
 int main(int argc, char **argv)
 {
+
+    #ifdef DEBUG
+        printf("Application pid: %d\n",getpid());
+    #endif
+
     struct sockaddr_in client_addr;
     pthread_attr_t attr;
     int res, client_len, yes = 1;
+    app_pid = getpid();
+
 
     /* inicializacia atributov pre vlakno */
     if((res = pthread_attr_init(&attr)) != 0){
@@ -124,7 +130,9 @@ void *handle_client(void* param){
     #ifdef DEBUG
         printf("Client socket id: %d\n",client_socket);
     #endif
+
     while(1){
+
         /* nastavenie bufferu */
         bzero(buffer,BUFFER_SIZE);
 
