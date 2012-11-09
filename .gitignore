@@ -10,3 +10,10 @@ rootkit.c
 hide_pid.c
 .directory
 *.swp
+.autotools
+.cproject
+.project
+.settings/
+patched/
+procps/
+rpm/
