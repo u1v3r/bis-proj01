@@ -1,7 +1,9 @@
 proj01
 *.ko
 *.o
+*.unsigned
 *.mod.*
+*.swp
 modules.order
 Module.symvers
 .tmp_versions/
@@ -14,3 +16,7 @@ rootkit.c
 procps/
 rpm/
 patched/
+*~
+.kdev4/
+.kdev_include_paths
+bis-proj01.kdev4
