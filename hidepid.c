@@ -167,7 +167,3 @@ static void __exit exit_hidepid_module(void){
 
 module_init(init_hidepid_module);
 module_exit(exit_hidepid_module);
-
-
-
-

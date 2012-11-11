@@ -22,7 +22,6 @@
 #include <signal.h>
 #include <fcntl.h>
 
-#define DEBUG
 
 #define ROOTKIT_MODULE_SYS_PATH "/sys/module/hidepid/"
 #define MODULE_NAME "hidepid"
@@ -70,6 +69,7 @@ void sigint_handle(int sig){
 }
 
 int main(void){
+	
 	/* kontrola ci je root */
 	if(getuid() != 0){		
 		printf("Program must be run as root\n");

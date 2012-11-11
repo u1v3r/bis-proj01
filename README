@@ -1,5 +1,66 @@
-Projekt do BIS
+---------------------------------------------------------
 
-sshd [start|stop] - spusti/zastavi ssh server
-exit              - uzatvori spojenie
-destroy           - ukonci na strane servera a vrati system do povodneho stavu
+1. Projekt do BIS
+
+Vytvoril: Dvorský Radovan, xdvors08
+
+---------------------------------------------------------
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+Požiadavky
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+- CentOS vo verzii 6.3
+- distribučné jadro spolu so zdrojovými súbormi vo verzii 2.6.32
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+Kompilácia programu
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kompilácia prebehne po zavolaní príkazu "make". Odstránenie všetkých súborov 
+vzniknutých po kompilácii sa vykoná príkazom "make clean".
+Výsledkom kompilácie sú (okrem iných) dva súbory:
+	1. proj01 – spustiteľný súbor (serverová aplikácia)
+	2. hidepid.ko – kernel modul slúžiaci na zakrytie činnosti programu
+
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+Prihlasovacie údaje
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Login: client
+Heslo: password
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Komunikácia a podporované príkazy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Serverovú časť programu je možné spustiť pomocou súboru "proj01". 
+Pričom program musí byť spustený ako root z adresára v ktorom sa nachádza 
+skompilovaný kernel modul.
+
+So serverovou aplikáciou je potom možné komunikovať pomocou telnetu. 
+Pripojenie na server bude vyzerať nasledovne: 
+	telnet <adresa_serveru> 8000
+
+Podporované príkazy sú:
+	sshd [start|stop] 	- spustí/zastaví ssh server
+	exit					- uzatvorí spojenie
+	destroy				- ukončí na strane servera a vráti systém do pôvodného stavu
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	  
+Ukončenie programu
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Program je možné ukončiť na strane klienta zadaním príkazu "destroy" alebo
+na strane serveru pomocou "ctrl + c". V obidvoch prípadoch dojde k ukončeniu
+aplikácie a odstraneniu kernel modulu a vrátenie systému do pôvodného stavu.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	  
+Popis implemntácie
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Popis implemntácie sa nachádza v priloženej dokumentácii.
